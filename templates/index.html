@@ -121,8 +121,15 @@
                 width: 100%;
                 padding: 14px;
             }
+            /* Make the table scrollable on small screens */
             .styled-table {
                 width: 100%;
+                overflow-x: auto;  /* Enable horizontal scrolling */
+                display: block;
+            }
+            .styled-table table {
+                width: 100%;
+                min-width: 600px;  /* Prevents the table from being too small */
             }
         }
     </style>
