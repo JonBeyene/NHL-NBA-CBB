@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parlay Odds Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        .container {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+        .column {
+            width: 30%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+        }
+        .column h2 {
+            border-bottom: 2px solid #333;
+            padding-bottom: 5px;
+        }
+        .team-option {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+        .team-option input[type="number"] {
+            width: 60px;
+        }
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        table {
+            width: 80%;
+            margin: 20px auto;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: center;
+        }
+        .results-container {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f1f1f1;
+            border: 1px solid #ddd;
+        }
+        .result-box {
+            padding: 10px;
+            font-weight: bold;
+        }
+    </style>
+    <script>
+        function getSelectedTeams(category) {
+            let selectedTeams = [];
+            let checkboxes = document.querySelectorAll(`.${category}-checkbox:checked`);
+            checkboxes.forEach(checkbox => {
+                let odds = document.getElementById(`${category}-odds-${checkbox.value}`).value;
+                selectedTeams.push(`${checkbox.value},${odds}`);
+            });
+            return selectedTeams;
+        }
+
+        async function generateParlays() {
+            let unitSize = document.getElementById("unitSize").value;
+
+            // Ensure at least one team is selected per category
+            if (!document.querySelector(".cbb-checkbox:checked") || 
+                !document.querySelector(".nba-checkbox:checked") || 
+                !document.querySelector(".nhl-checkbox:checked")) {
+                alert("Please select at least one team from each category.");
+                return;
+            }
+
+            let teams = {
+                cbb: getSelectedTeams("cbb"),
+                nba: getSelectedTeams("nba"),
+                nhl: getSelectedTeams("nhl"),
+            };
+
+            let response = await fetch("/generate_parlays", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ unitSize: unitSize, teams: teams })
+            });
+
+            let data = await response.json();
+            displayResults(data);
+        }
+
+        function displayResults(data) {
+            let resultTable = document.getElementById("resultTable");
+            resultTable.innerHTML = `
+                <tr>
+                    <th>College Team</th>
+                    <th>CBB Odds</th>
+                    <th>NBA Team</th>
+                    <th>NBA Odds</th>
+                    <th>NHL Team</th>
+                    <th>NHL Odds</th>
+                    <th>Parlay Odds</th>
+                    <th>Implied Probability(%)</th>
+                    <th>Payoffs</th>
+                </tr>
+            `;
+
+            data.parlays.forEach(row => {
+                let tr = document.createElement("tr");
+                row.forEach(cell => {
+                    let td = document.createElement("td");
+                    td.innerText = cell;
+                    tr.appendChild(td);
+                });
+                resultTable.appendChild(tr);
+            });
+
+            document.getElementById("parlayCount").innerText = data.totalParlays;
+            document.getElementById("capital").innerText = data.capital;
+            document.getElementById("loss_count").innerText = data.loss_count;
+            document.getElementById("win_count").innerText = data.win_count;
+            document.getElementById("min_payoff").innerText = data.min_payoff;
+            document.getElementById("max_payoff").innerText = data.max_payoff;
+            document.getElementById("average").innerText = data.average;
+            document.getElementById("rolling_ev").innerText = data.rolling_ev;
+            document.getElementById("return_val").innerText = data.return_val;
+        }
+    </script>
+</head>
+<body>
+    <h1>Parlay Odds Calculator</h1>
+    
+    <label>Unit Size:</label>
+    <input type="number" id="unitSize" value="1"><br><br>
+
+    <div class="container">
+        <!-- College Basketball Teams -->
+        <div class="column">
+            <h2>College Basketball Teams</h2>
+            <div class="team-option">
+                <label><input type="checkbox" class="cbb-checkbox" value="Auburn" checked> Auburn </label>
+                <input type="number" id="cbb-odds-Auburn" value="340">
+            </div>
+            <div class="team-option">
+                <label><input type="checkbox" class="cbb-checkbox" value="Duke"> Duke </label>
+                <input type="number" id="cbb-odds-Duke" value="340">
+            </div>
+            <div class="team-option">
+                <label><input type="checkbox" class="cbb-checkbox" value="Florida"> Florida </label>
+                <input type="number" id="cbb-odds-Florida" value="750">
+            </div>
+            <div class="team-option">
+                <label><input type="checkbox" class="cbb-checkbox" value="Houston"> Houston </label>
+                <input type="number" id="cbb-odds-Houston" value="850">
+            </div>
+            <div class="team-option">
+                <label><input type="checkbox" class="cbb-checkbox" value="Tennessee"> Tennessee </label>
+                <input type="number" id="cbb-odds-Tennessee" value="1500">
+            </div>
+        </div>
+
+        <!-- NBA Teams -->
+        <div class="column">
+            <h2>NBA Teams</h2>
+            <div class="team-option">
+                <label><input type="checkbox" class="nba-checkbox" value="Celtics" checked> Celtics </label>
+                <input type="number" id="nba-odds-Celtics" value="180">
+            </div>
+            <div class="team-option">
+                <label><input type="checkbox" class="nba-checkbox" value="OKC"> OKC </label>
+                <input type="number" id="nba-odds-OKC" value="200">
+            </div>
+            <div class="team-option">
+                <label><input type="checkbox" class="nba-checkbox" value="Cavs"> Cavs </label>
+                <input type="number" id="nba-odds-Cavs" value="550">
+            </div>
+            <div class="team-option">
+                <label><input type="checkbox" class="nba-checkbox" value="Lakers"> Lakers </label>
+                <input type="number" id="nba-odds-Lakers" value="1300">
+            </div>
+            <div class="team-option">
+                <label><input type="checkbox" class="nba-checkbox" value="Nuggets"> Nuggets </label>
+                <input type="number" id="nba-odds-Nuggets" value="1600">
+            </div>
+        </div>
+
+        <!-- NHL Teams -->
+        <div class="column">
+            <h2>NHL Teams</h2>
+            <div class="team-option">
+                <label><input type="checkbox" class="nhl-checkbox" value="Panthers" checked> Panthers </label>
+                <input type="number" id="nhl-odds-Panthers" value="500">
+            </div>
+            <div class="team-option">
+                <label><input type="checkbox" class="nhl-checkbox" value="Stars"> Stars </label>
+                <input type="number" id="nhl-odds-Stars" value="600">
+            </div>
+            <div class="team-option">
+                <label><input type="checkbox" class="nhl-checkbox" value="Oilers"> Oilers </label>
+                <input type="number" id="nhl-odds-Oilers" value="750">
+            </div>
+            <div class="team-option">
+                <label><input type="checkbox" class="nhl-checkbox" value="Avalanche"> Avalanche </label>
+                <input type="number" id="nhl-odds-Avalanche" value="900">
+            </div>
+            <div class="team-option">
+                <label><input type="checkbox" class="nhl-checkbox" value="VGK"> VGK </label>
+                <input type="number" id="nhl-odds-VGK" value="1000">
+            </div>
+        </div>
+    </div>
+
+    <br><button onclick="generateParlays()">Generate Parlays</button>
+
+    <div class="results-container">
+        <div class="result-box">Total Parlays: <span id="parlayCount">0</span></div>
+        <div class="result-box">Capital: <span id="capital">0</span></div>
+        <div class="result-box">Loss Count: <span id="loss_count">0</span></div>
+        <div class="result-box">Win Count: <span id="win_count">0</span></div>
+        <div class="result-box">Min Payoff: <span id="min_payoff">0</span></div>
+        <div class="result-box">Max Payoff: <span id="max_payoff">0</span></div>
+        <div class="result-box">Average Odds: <span id="average">0</span></div>
+        <div class="result-box">Expected Value: <span id="rolling_ev">0</span></div>
+        <div class="result-box">Returns: <span id="return_val">0</span></div>
+    </div>
+
+    <table border="1" id="resultTable"></table>
+</body>
+</html>
